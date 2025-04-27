@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arqueo de Caja Automatizado</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .denomination-input {
+            -moz-appearance: textfield;
+            width: 100%;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            text-align: right;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .denomination-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .sobrante-positivo {
+            color: #10b981;
+        }
+        .sobrante-negativo {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <!-- Header -->
+            <div class="bg-blue-600 px-6 py-4">
+                <h1 class="text-2xl font-bold text-white text-center"><i class="fas fa-calculator mr-2"></i>ARQUEO DE CAJA AUTOMATIZADO</h1>
+            </div>
+            
+            <div class="p-6">
+                <!-- Información General -->
+                <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 class="text-lg font-semibold mb-3 text-blue-700"><i class="fas fa-info-circle mr-2"></i>Información General</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1"><i class="far fa-calendar-alt mr-1"></i>Fecha y hora:</label>
+                            <input type="datetime-local" id="fechaHora" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-money-bill-wave mr-1"></i>Caja Chica:</label>
+                            <input type="number" id="cajaChica" value="100" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Ventas -->
+                <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 class="text-lg font-semibold mb-3 text-blue-700"><i class="fas fa-cash-register mr-2"></i>Registro de Ventas</h3>
+                    <div id="ventasContainer" class="space-y-3">
+                        <!-- BOLSAS -->
+                        <div class="grid grid-cols-12 gap-2 items-center">
+                            <div class="col-span-3 font-medium text-gray-700"><i class="fas fa-shopping-bag mr-1"></i>BOLSAS</div>
+                            <input type="number" id="bolsasCant" value="0" class="col-span-2 denomination-input" tabindex="1" onkeydown="handleEnter(event, 'g11Cant')">
+                            <span class="text-center">X</span>
+                            <span class="col-span-2">12</span>
+                            <span class="text-center">=</span>
+                            <span id="bolsasTotal" class="col-span-2 text-right font-mono">0.00</span>
+                        </div>
+                        
+                        <!-- G11 -->
+                        <div class="grid grid-cols-12 gap-2 items-center">
+                            <div class="col-span-3 font-medium text-gray-700"><i class="fas fa-ticket-alt mr-1"></i>G11</div>
+                            <input type="number" id="g11Cant" value="0" class="col-span-2 denomination-input" tabindex="2" onkeydown="handleEnter(event, 'b3Cant')">
+                            <span class="text-center">X</span>
+                            <span class="col-span-2">10</span>
+                            <span class="text-center">=</span>
+                            <span id="g11Total" class="col-span-2 text-right font-mono">0.00</span>
+                        </div>
+                        
+                        <!-- B3 -->
+                        <div class="grid grid-cols-12 gap-2 items-center">
+                            <div class="col-span-3 font-medium text-gray-700"><i class="fas fa-ticket-alt mr-1"></i>B3</div>
+                            <input type="number" id="b3Cant" value="0" class="col-span-2 denomination-input" tabindex="3" onkeydown="handleEnter(event, 'b5Cant')">
+                            <span class="text-center">X</span>
+                            <span class="col-span-2">3</span>
+                            <span class="text-center">=</span>
+                            <span id="b3Total" class="col-span-2 text-right font-mono">0.00</span>
+                        </div>
+                        
+                        <!-- B5 -->
+                        <div class="grid grid-cols-12 gap-2 items-center">
+                            <div class="col-span-3 font-medium text-gray-700"><i class="fas fa-ticket-alt mr-1"></i>B5</div>
+                            <input type="number" id="b5Cant" value="0" class="col-span-2 denomination-input" tabindex="4" onkeydown="handleEnter(event, 'domCant')">
+                            <span class="text-center">X</span>
+                            <span class="col-span-2">5</span>
+                            <span class="text-center">=</span>
+                            <span id="b5Total" class="col-span-2 text-right font-mono">0.00</span>
+                        </div>
+                        
+                        <!-- DOM -->
+                        <div class="grid grid-cols-12 gap-2 items-center">
+                            <div class="col-span-3 font-medium text-gray-700"><i class="fas fa-ticket-alt mr-1"></i>DOM</div>
+                            <input type="number" id="domCant" value="0" class="col-span-2 denomination-input" tabindex="5" onkeydown="handleEnter(event, 'illCant')">
+                            <span class="text-center">X</span>
+                            <span class="col-span-2">8</span>
+                            <span class="text-center">=</span>
+                            <span id="domTotal" class="col-span-2 text-right font-mono">0.00</span>
+                        </div>
+                        
+                        <!-- I/LL -->
+                        <div class="grid grid-cols-12 gap-2 items-center">
+                            <div class="col-span-3 font-medium text-gray-700"><i class="fas fa-ticket-alt mr-1"></i>I/LL</div>
+                            <input type="number" id="illCant" value="0" class="col-span-2 denomination-input" tabindex="6" onkeydown="handleEnter(event, 'gnCant')">
+                            <span class="text-center">X</span>
+                            <span class="col-span-2">35</span>
+                            <span class="text-center">=</span>
+                            <span id="illTotal" class="col-span-2 text-right font-mono">0.00</span>
+                        </div>
+                        
+                        <!-- GN -->
+                        <div class="grid grid-cols-12 gap-2 items-center">
+                            <div class="col-span-3 font-medium text-gray-700"><i class="fas fa-ticket-alt mr-1"></i>GN</div>
+                            <input type="number" id="gnCant" value="0" class="col-span-2 denomination-input" tabindex="7" onkeydown="handleEnter(event, 'gnPrecio')">
+                            <span class="text-center">X</span>
+                            <input type="number" id="gnPrecio" value="0" class="col-span-2 denomination-input" tabindex="8" onkeydown="handleEnter(event, 'billete500')">
+                            <span class="text-center">=</span>
+                            <span id="gnTotal" class="col-span-2 text-right font-mono">0.00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+                        <span class="font-semibold text-blue-800"><i class="fas fa-receipt mr-1"></i>Total Ventas: $</span>
+                        <span id="totalVentas" class="font-bold text-blue-800">0.00</span>
+                    </div>
+                </div>
+                
+                <!-- Billetes y Monedas -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- Billetes -->
+                    <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <h3 class="text-lg font-semibold mb-3 text-blue-700"><i class="fas fa-money-bill-alt mr-2"></i>BILLETES</h3>
+                        <div class="space-y-2">
+                            <div class="grid grid-cols-12 gap-2 items-center">
+                                <span class="col-span-2">500</span>
+                                <span class="text-center">X</span>
+                                <input type="number" id="billete500" value="0" class="col-span-3 denomination-input" tabindex="9" onkeydown="handleEnter(event, 'billete200')" onchange="calcularDenominacion('billete500', 500, 'total500')">
+                                <span class="text-center">=</span>
+                                <span id="total500" class="col-span-4 text-right font-mono">0.00</span>
+                            </div>
+                            <div class="grid grid-cols-12 gap-2 items-center">
+                                <span class="col-span-2">200</span>
+                                <span class="text-center">X</span>
+                                <input type="number" id="billete200" value="0" class="col-span-3 denomination-input" tabindex="10" onkeydown="handleEnter(event, 'billete100')" onchange="calcularDenominacion('billete200', 200, 'total200')">
+                                <span class="text-center">=</span>
+                                <span id="total200" class="col-span-4 text-right font-mono">0.00</span>
+                            </div>
+                            <div class="grid grid-cols-12 gap-2 items-center">
+                                <span class="col-span-2">100</span>
+                                <span class="text-center">X</span>
+                                <input type="number" id="billete100" value="0" class="col-span-3 denomination-input" tabindex="11" onkeydown="handleEnter(event, 'billete50')" onchange="calcularDenominacion('billete100', 100, 'total100')">
+                                <span class="text-center">=</span>
+                                <span id="total100" class="col-span-4 text-right font-mono">0.00</span>
+                            </div>
+                            <div class="grid grid-cols-12 gap-2 items-center">
+                                <span class="col-span-2">50</span>
+                                <span class="text-center">X</span>
+                                <input type="number" id="billete50" value="0" class="col-span-3 denomination-input" tabindex="12" onkeydown="handleEnter(event, 'billete20')" onchange="calcularDenominacion('billete50', 50, 'total50')">
+                                <span class="text-center">=</span>
+                                <span id="total50" class="col-span-4 text-right font-mono">0.00</span>
+                            </div>
+                            <div class="grid grid-cols-12 gap-2 items-center">
+                                <span class="col-span-2">20</span>
+                                <span class="text-center">X</span>
+                                <input type="number" id="billete20" value="0" class="col-span-3 denomination-input" tabindex="13" onkeydown="handleEnter(event, 'moneda10')" onchange="calcularDenominacion('billete20', 20, 'total20')">
+                                <span class="text-center">=</span>
+                                <span id="total20" class="col-span-4 text-right font-mono">0.00</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+                            <span class="font-semibold text-blue-800"><i class="fas fa-coins mr-1"></i>Total Billetes: $</span>
+                            <span id="totalBilletes" class="font-bold text-blue-800">0.00</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Monedas -->
+                    <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <h3 class="text-lg font-semibold mb-3 text-blue-700"><i class="fas fa-coins mr-2"></i>MONEDAS</h3>
+                        <div class="space-y-2">
+                            <div class="grid grid-cols-12 gap-2 items-center">
+                                <span class="col-span-2">10</span>
+                                <span class="text-center">X</span>
+                                <input type="number" id="moneda10" value="0" class="col-span-3 denomination-input" tabindex="14" onkeydown="handleEnter(event, 'moneda5')" onchange="calcularDenominacion('moneda10', 10, 'total10')">
+                                <span class="text-center">=</span>
+                                <span id="total10" class="col-span-4 text-right font-mono">0.00</span>
+                            </div>
+                            <div class="grid grid-cols-12 gap-2 items-center">
+                                <span class="col-span-2">5</span>
+                                <span class="text-center">X</span>
+                                <input type="number" id="moneda5" value="0" class="col-span-3 denomination-input" tabindex="15" onkeydown="handleEnter(event, 'moneda2')" onchange="calcularDenominacion('moneda5', 5, 'total5')">
+                                <span class="text-center">=</span>
+                                <span id="total5" class="col-span-4 text-right font-mono">0.00</span>
+                            </div>
+                            <div class="grid grid-cols-12 gap-2 items-center">
+                                <span class="col-span-2">2</span>
+                                <span class="text-center">X</span>
+                                <input type="number" id="moneda2" value="0" class="col-span-3 denomination-input" tabindex="16" onkeydown="handleEnter(event, 'moneda1')" onchange="calcularDenominacion('moneda2', 2, 'total2')">
+                                <span class="text-center">=</span>
+                                <span id="total2" class="col-span-4 text-right font-mono">0.00</span>
+                            </div>
+                            <div class="grid grid-cols-12 gap-2 items-center">
+                                <span class="col-span-2">1</span>
+                                <span class="text-center">X</span>
+                                <input type="number" id="moneda1" value="0" class="col-span-3 denomination-input" tabindex="17" onkeydown="handleEnter(event, 'moneda05')" onchange="calcularDenominacion('moneda1', 1, 'total1')">
+                                <span class="text-center">=</span>
+                                <span id="total1" class="col-span-4 text-right font-mono">0.00</span>
+                            </div>
+                            <div class="grid grid-cols-12 gap-2 items-center">
+                                <span class="col-span-2">0.5</span>
+                                <span class="text-center">X</span>
+                                <input type="number" id="moneda05" value="0" step="0.5" class="col-span-3 denomination-input" tabindex="18" onkeydown="handleEnter(event, 'observaciones')" onchange="calcularDenominacion('moneda05', 0.5, 'total05')">
+                                <span class="text-center">=</span>
+                                <span id="total05" class="col-span-4 text-right font-mono">0.00</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+                            <span class="font-semibold text-blue-800"><i class="fas fa-coins mr-1"></i>Total Monedas: $</span>
+                            <span id="totalMonedas" class="font-bold text-blue-800">0.00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Totales y Diferencia -->
+                <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-3 bg-blue-50 rounded-md border border-blue-100">
+                            <label class="block text-sm font-medium text-blue-700 mb-1"><i class="fas fa-receipt mr-1"></i>Total Ventas</label>
+                            <div class="text-xl font-bold text-blue-800">$<span id="totalVentasFinal">0.00</span></div>
+                        </div>
+                        <div class="p-3 bg-blue-50 rounded-md border border-blue-100">
+                            <label class="block text-sm font-medium text-blue-700 mb-1"><i class="fas fa-calculator mr-1"></i>Total Arqueo</label>
+                            <div class="text-xl font-bold text-blue-800">$<span id="totalArqueo">0.00</span></div>
+                        </div>
+                        <div class="p-3 bg-blue-50 rounded-md border border-blue-100">
+                            <label class="block text-sm font-medium text-blue-700 mb-1"><i class="fas fa-balance-scale mr-1"></i>Diferencia</label>
+                            <div id="diferenciaContainer" class="text-xl font-bold">$<span id="diferencia">0.00</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1"><i class="fas fa-comment-alt mr-1"></i>Observaciones:</label>
+                        <input type="text" id="observaciones" value="NINGUNA" tabindex="19" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+                
+                <!-- Botones -->
+                <div class="flex justify-center space-x-4">
+                    <button onclick="calcularTotales()" class="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        <i class="fas fa-calculator mr-2"></i>Calcular Todo
+                    </button>
+                    <button onclick="generarPDF()" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        <i class="fas fa-file-pdf mr-2"></i>Exportar a PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inicializar jsPDF
+        const { jsPDF } = window.jspdf;
+        
+        // Configurar fecha/hora actual por defecto
+        document.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            const timezoneOffset = now.getTimezoneOffset() * 60000;
+            const localISOTime = new Date(now - timezoneOffset).toISOString().slice(0, 16);
+            document.getElementById('fechaHora').value = localISOTime;
+            
+            // Calcular valores iniciales
+            calcularTotales();
+            
+            // Enfocar el primer input al cargar
+            document.getElementById('bolsasCant').focus();
+        });
+        
+        // Función para manejar la tecla Enter
+        function handleEnter(event, nextFieldId) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const nextField = document.getElementById(nextFieldId);
+                if (nextField) {
+                    nextField.focus();
+                    if (nextField.tagName === 'INPUT') {
+                        nextField.select();
+                    }
+                }
+            }
+        }
+        
+        // Función para calcular cada denominación
+        function calcularDenominacion(inputId, valor, totalId) {
+            const inputElement = document.getElementById(inputId);
+            const totalElement = document.getElementById(totalId);
+            
+            if(inputElement && totalElement) {
+                const cantidad = parseFloat(inputElement.value) || 0;
+                const total = cantidad * valor;
+                totalElement.textContent = total.toFixed(2);
+                calcularTotalArqueo();
+                calcularDiferencia();
+            }
+        }
+        
+        // Función para calcular ventas
+        function calcularVentas() {
+            // BOLSAS
+            const bolsasCant = parseFloat(document.getElementById('bolsasCant').value) || 0;
+            document.getElementById('bolsasTotal').textContent = (bolsasCant * 12).toFixed(2);
+            
+            // G11
+            const g11Cant = parseFloat(document.getElementById('g11Cant').value) || 0;
+            document.getElementById('g11Total').textContent = (g11Cant * 10).toFixed(2);
+            
+            // B3
+            const b3Cant = parseFloat(document.getElementById('b3Cant').value) || 0;
+            document.getElementById('b3Total').textContent = (b3Cant * 3).toFixed(2);
+            
+            // B5
+            const b5Cant = parseFloat(document.getElementById('b5Cant').value) || 0;
+            document.getElementById('b5Total').textContent = (b5Cant * 5).toFixed(2);
+            
+            // DOM
+            const domCant = parseFloat(document.getElementById('domCant').value) || 0;
+            document.getElementById('domTotal').textContent = (domCant * 8).toFixed(2);
+            
+            // I/LL
+            const illCant = parseFloat(document.getElementById('illCant').value) || 0;
+            document.getElementById('illTotal').textContent = (illCant * 35).toFixed(2);
+            
+            // GN
+            const gnCant = parseFloat(document.getElementById('gnCant').value) || 0;
+            const gnPrecio = parseFloat(document.getElementById('gnPrecio').value) || 0;
+            document.getElementById('gnTotal').textContent = (gnCant * gnPrecio).toFixed(2);
+            
+            // Calcular total ventas
+            const totalVentas = 
+                (bolsasCant * 12) + 
+                (g11Cant * 10) + 
+                (b3Cant * 3) + 
+                (b5Cant * 5) + 
+                (domCant * 8) + 
+                (illCant * 35) + 
+                (gnCant * gnPrecio);
+                
+            document.getElementById('totalVentas').textContent = totalVentas.toFixed(2);
+            document.getElementById('totalVentasFinal').textContent = totalVentas.toFixed(2);
+        }
+        
+        // Función para calcular el total del arqueo (billetes + monedas)
+        function calcularTotalArqueo() {
+            // Sumar billetes
+            const billetesIds = ['total500', 'total200', 'total100', 'total50', 'total20'];
+            let totalBilletes = 0;
+            
+            billetesIds.forEach(id => {
+                const element = document.getElementById(id);
+                if(element) {
+                    totalBilletes += parseFloat(element.textContent) || 0;
+                }
+            });
+            
+            const totalBilletesElement = document.getElementById('totalBilletes');
+            if(totalBilletesElement) {
+                totalBilletesElement.textContent = totalBilletes.toFixed(2);
+            }
+            
+            // Sumar monedas
+            const monedasIds = ['total10', 'total5', 'total2', 'total1', 'total05'];
+            let totalMonedas = 0;
+            
+            monedasIds.forEach(id => {
+                const element = document.getElementById(id);
+                if(element) {
+                    totalMonedas += parseFloat(element.textContent) || 0;
+                }
+            });
+            
+            const totalMonedasElement = document.getElementById('totalMonedas');
+            if(totalMonedasElement) {
+                totalMonedasElement.textContent = totalMonedas.toFixed(2);
+            }
+            
+            // Calcular total del arqueo
+            const totalArqueo = totalBilletes + totalMonedas;
+            const totalArqueoElement = document.getElementById('totalArqueo');
+            
+            if(totalArqueoElement) {
+                totalArqueoElement.textContent = totalArqueo.toFixed(2);
+            }
+        }
+        
+        // Función para calcular la diferencia
+        function calcularDiferencia() {
+            const totalVentas = parseFloat(document.getElementById('totalVentas').textContent) || 0;
+            const totalArqueo = parseFloat(document.getElementById('totalArqueo').textContent) || 0;
+            
+            // Calcular diferencia (Ventas - Arqueo)
+            const diferencia = totalVentas - totalArqueo;
+            
+            const diferenciaElement = document.getElementById('diferencia');
+            const diferenciaContainer = document.getElementById('diferenciaContainer');
+            
+            if(diferenciaElement && diferenciaContainer) {
+                // Mostrar diferencia con signo
+                if(diferencia > 0) {
+                    diferenciaElement.textContent = `-${Math.abs(diferencia).toFixed(2)}`;
+                    diferenciaContainer.className = "text-xl font-bold sobrante-negativo";
+                } else if(diferencia < 0) {
+                    diferenciaElement.textContent = `+${Math.abs(diferencia).toFixed(2)}`;
+                    diferenciaContainer.className = "text-xl font-bold sobrante-positivo";
+                } else {
+                    diferenciaElement.textContent = "0.00";
+                    diferenciaContainer.className = "text-xl font-bold";
+                }
+            }
+        }
+        
+        // Función para calcular todos los totales
+        function calcularTotales() {
+            calcularVentas();
+            
+            // Calcular todas las denominaciones
+            const denominaciones = [
+                { inputId: 'billete500', valor: 500, totalId: 'total500' },
+                { inputId: 'billete200', valor: 200, totalId: 'total200' },
+                { inputId: 'billete100', valor: 100, totalId: 'total100' },
+                { inputId: 'billete50', valor: 50, totalId: 'total50' },
+                { inputId: 'billete20', valor: 20, totalId: 'total20' },
+                { inputId: 'moneda10', valor: 10, totalId: 'total10' },
+                { inputId: 'moneda5', valor: 5, totalId: 'total5' },
+                { inputId: 'moneda2', valor: 2, totalId: 'total2' },
+                { inputId: 'moneda1', valor: 1, totalId: 'total1' },
+                { inputId: 'moneda05', valor: 0.5, totalId: 'total05' }
+            ];
+            
+            denominaciones.forEach(denominacion => {
+                calcularDenominacion(denominacion.inputId, denominacion.valor, denominacion.totalId);
+            });
+            
+            calcularDiferencia();
+        }
+        
+        // Función para generar PDF mejorado
+        function generarPDF() {
+            const doc = new jsPDF();
+            
+            // Configuración inicial
+            doc.setFont('Poppins', 'normal');
+            doc.setFontSize(12);
+            
+            // Encabezado
+            doc.setTextColor(0, 0, 128);
+            doc.setFontSize(18);
+            doc.text('ARQUEO DE CAJA', 105, 15, { align: 'center' });
+            
+            // Fecha y hora
+            const fechaHoraInput = document.getElementById('fechaHora');
+            const fechaHora = fechaHoraInput ? fechaHoraInput.value : new Date().toISOString();
+            const fechaFormateada = new Date(fechaHora).toLocaleDateString('es-MX') + ' ' + 
+                                   new Date(fechaHora).toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit'});
+            doc.setTextColor(100, 100, 100);
+            doc.setFontSize(10);
+            doc.text(fechaFormateada, 105, 22, { align: 'center' });
+            
+            // Línea divisoria
+            doc.setDrawColor(200, 200, 200);
+            doc.line(20, 25, 190, 25);
+            
+            // Caja chica
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            const cajaChica = document.getElementById('cajaChica');
+            doc.text(`Caja chica inicial: $${(cajaChica ? parseFloat(cajaChica.value).toFixed(2) : '0.00')}`, 20, 35);
+            
+            let yPos = 45;
+            
+            // Sección de Ventas
+            doc.setTextColor(0, 0, 128);
+            doc.setFontSize(14);
+            doc.text('VENTAS', 20, yPos);
+            yPos += 10;
+            
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            
+            // Ventas fijas
+            const ventasFijas = [
+                { nombre: 'BOLSAS', id: 'bolsasCant', precio: 12, totalId: 'bolsasTotal' },
+                { nombre: 'G11', id: 'g11Cant', precio: 10, totalId: 'g11Total' },
+                { nombre: 'B3', id: 'b3Cant', precio: 3, totalId: 'b3Total' },
+                { nombre: 'B5', id: 'b5Cant', precio: 5, totalId: 'b5Total' },
+                { nombre: 'DOM', id: 'domCant', precio: 8, totalId: 'domTotal' },
+                { nombre: 'I/LL', id: 'illCant', precio: 35, totalId: 'illTotal' },
+                { nombre: 'GN', id: 'gnCant', precioId: 'gnPrecio', totalId: 'gnTotal' }
+            ];
+            
+            ventasFijas.forEach(venta => {
+                const cantidadElement = document.getElementById(venta.id);
+                const cantidad = cantidadElement ? cantidadElement.value : '0';
+                
+                let precio = venta.precio;
+                if(venta.precioId) {
+                    const precioElement = document.getElementById(venta.precioId);
+                    precio = precioElement ? precioElement.value : '0';
+                }
+                
+                const totalElement = document.getElementById(venta.totalId);
+                const total = totalElement ? totalElement.textContent : '0.00';
+                
+                doc.text(`${venta.nombre}: ${cantidad} x $${precio} = $${total}`, 25, yPos);
+                yPos += 7;
+            });
+            
+            // Total Ventas
+            const totalVentasElement = document.getElementById('totalVentas');
+            doc.setFont('Poppins', 'bold');
+            doc.text(`Total Ventas: $${totalVentasElement ? totalVentasElement.textContent : '0.00'}`, 20, yPos + 5);
+            doc.setFont('Poppins', 'normal');
+            yPos += 15;
+            
+            // Sección de Billetes
+            doc.setTextColor(0, 0, 128);
+            doc.setFontSize(14);
+            doc.text('BILLETES', 20, yPos);
+            yPos += 10;
+            
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            
+            const billetes = [500, 200, 100, 50, 20];
+            billetes.forEach(valor => {
+                const cantidadElement = document.getElementById(`billete${valor}`);
+                const cantidad = cantidadElement ? cantidadElement.value : '0';
+                
+                const totalElement = document.getElementById(`total${valor}`);
+                const total = totalElement ? totalElement.textContent : '0.00';
+                
+                doc.text(`$${valor}: ${cantidad} x $${valor} = $${total}`, 25, yPos);
+                yPos += 7;
+            });
+            
+            // Total Billetes
+            const totalBilletesElement = document.getElementById('totalBilletes');
+            doc.setFont('Poppins', 'bold');
+            doc.text(`Total Billetes: $${totalBilletesElement ? totalBilletesElement.textContent : '0.00'}`, 20, yPos + 5);
+            doc.setFont('Poppins', 'normal');
+            yPos += 15;
+            
+            // Sección de Monedas
+            doc.setTextColor(0, 0, 128);
+            doc.setFontSize(14);
+            doc.text('MONEDAS', 20, yPos);
+            yPos += 10;
+            
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            
+            const monedas = [10, 5, 2, 1, 0.5];
+            monedas.forEach(valor => {
+                const id = valor.toString().replace('.', '');
+                const cantidadElement = document.getElementById(`moneda${id}`);
+                const cantidad = cantidadElement ? cantidadElement.value : '0';
+                
+                const totalElement = document.getElementById(`total${id}`);
+                const total = totalElement ? totalElement.textContent : '0.00';
+                
+                doc.text(`$${valor}: ${cantidad} x $${valor} = $${total}`, 25, yPos);
+                yPos += 7;
+            });
+            
+            // Total Monedas
+            const totalMonedasElement = document.getElementById('totalMonedas');
+            doc.setFont('Poppins', 'bold');
+            doc.text(`Total Monedas: $${totalMonedasElement ? totalMonedasElement.textContent : '0.00'}`, 20, yPos + 5);
+            doc.setFont('Poppins', 'normal');
+            yPos += 15;
+            
+            // Resumen final
+            doc.setDrawColor(200, 200, 200);
+            doc.line(20, yPos, 190, yPos);
+            yPos += 10;
+            
+            // Total del Arqueo
+            const totalArqueoElement = document.getElementById('totalArqueo');
+            doc.setFontSize(14);
+            doc.text(`TOTAL ARQUEO: $${totalArqueoElement ? totalArqueoElement.textContent : '0.00'}`, 20, yPos);
+            yPos += 10;
+            
+            // Total Ventas
+            doc.text(`TOTAL VENTAS: $${totalVentasElement ? totalVentasElement.textContent : '0.00'}`, 20, yPos);
+            yPos += 10;
+            
+            // Diferencia
+            const diferenciaElement = document.getElementById('diferencia');
+            const diferencia = diferenciaElement ? diferenciaElement.textContent : '0.00';
+            doc.text(`DIFERENCIA: $${diferencia}`, 20, yPos);
+            yPos += 15;
+            
+            // Observaciones
+            const observacionesElement = document.getElementById('observaciones');
+            doc.setFontSize(12);
+            doc.text(`OBSERVACIONES: ${observacionesElement ? observacionesElement.value : 'NINGUNA'}`, 20, yPos);
+            
+            // Pie de página
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Documento generado automáticamente - Arqueo de Caja', 105, 285, { align: 'center' });
+            
+            // Guardar PDF
+            doc.save(`Arqueo_Caja_${fechaFormateada.replace(/[/:]/g, '-')}.pdf`);
+        }
+    </script>
+</body>
+</html>

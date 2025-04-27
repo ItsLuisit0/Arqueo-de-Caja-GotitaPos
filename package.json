@@ -1,0 +1,11 @@
+{
+    "name": "gotitapos",
+    "version": "1.0.0",
+    "description": "Sistema de Arqueo de Caja",
+    "scripts": {
+      "build": "tailwindcss -i ./src/input.css -o ./dist/output.css --watch"
+    },
+    "devDependencies": {
+      "tailwindcss": "^3.3.0"
+    }
+  }
